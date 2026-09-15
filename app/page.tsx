@@ -1,47 +1,48 @@
-export default function Page() {
-  return (
-    <main
-      style={{
-        colorScheme: 'light dark',
-        position: 'relative',
-        display: 'flex',
-        minHeight: '100vh',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'light-dark(#fff, #000)',
-        color: 'light-dark(#000, #fff)',
-      }}
-    >
-      <svg
-        aria-hidden="true"
-        style={{ width: 80, height: 80 }}
-        width={80}
-        height={80}
-        fill="none"
-        viewBox="0 0 20 20"
-        xmlns="http://www.w3.org/2000/svg"
-        stroke="currentColor"
-        strokeWidth="0.5"
-      >
-        <path
-          d="M14.2 14.2H17V6.9375C17 4.76288 15.2371 3 13.0625 3H5.8V5.8M14.2 14.2V7.79063L7.79062 14.2H14.2ZM14.2 14.2V17H6.9375C4.76288 17 3 15.2371 3 13.0625V5.8H5.8M5.8 5.8V12.2313L12.2313 5.8H5.8Z"
-          strokeLinejoin="round"
-        />
-      </svg>
-      <p
-        style={{
-          position: 'absolute',
-          left: '50%',
-          top: 'calc(50% + 56px)',
-          transform: 'translateX(-50%)',
-          whiteSpace: 'nowrap',
-          fontSize: '14px',
-          fontWeight: 500,
-          color: 'light-dark(#71717a, #a1a1aa)',
-        }}
-      >
-        Your v0 generation will show here.
-      </p>
-    </main>
-  )
+'use client'
+
+import { useMemo, useState } from 'react'
+import { catalog, moods, searchCatalog, type MusicTrack } from '@/lib/music-catalog'
+import { Search, Play, Pause, Heart, Plus, MoreHorizontal, Headphones, Library, ListMusic, Users, Disc3, ChevronRight, Check, Radio, Shuffle, Volume2 } from 'lucide-react'
+
+function Artwork({ track, size = 'md' }: { track: MusicTrack; size?: 'sm' | 'md' | 'lg' }) {
+  return <div className={`art art-${size}`} style={{ backgroundImage: `url(${track.artwork})` }}><span style={{ background: track.accent }} /></div>
 }
+
+export default function Page() {
+  const [query, setQuery] = useState('')
+  const [activeMood, setActiveMood] = useState('All moods')
+  const [current, setCurrent] = useState<MusicTrack | null>(catalog[0])
+  const [playing, setPlaying] = useState(false)
+  const [liked, setLiked] = useState<string[]>([])
+  const [playlist, setPlaylist] = useState<string[]>([])
+  const [roomOpen, setRoomOpen] = useState(false)
+  const results = useMemo(() => searchCatalog(query).filter(track => activeMood === 'All moods' || track.mood === activeMood), [query, activeMood])
+  // Keep the initial server snapshot deterministic; the catalog service can randomize this selection server-side in production.
+  const discovery = useMemo(() => catalog.slice(0, 12), [])
+  const addPlaylist = (track: MusicTrack) => setPlaylist(items => items.includes(track.id) ? items : [...items, track.id])
+  const togglePlay = (track: MusicTrack) => { setCurrent(track); setPlaying(current?.id === track.id ? !playing : true) }
+
+  return <main className="app-shell" style={current ? { '--glow': current.accent } as React.CSSProperties : undefined}>
+    <aside className="sidebar">
+      <div className="brand"><span className="brand-mark"><Headphones size={18} /></span><span>sonora</span></div>
+      <div className="nav-group"><p className="eyebrow">Workspace</p><button className="nav-item active"><Library size={17} />Discover</button><button className="nav-item" onClick={() => setQuery('')}><Search size={17} />Search <kbd>⌘ K</kbd></button><button className="nav-item"><ListMusic size={17} />Your library</button></div>
+      <div className="nav-group"><p className="eyebrow">Your music</p><button className="nav-item"><Heart size={17} />Liked songs <span className="count">{liked.length || 12}</span></button><button className="nav-item"><Disc3 size={17} />Albums</button><button className="nav-item"><Users size={17} />Friends</button></div>
+      <div className="playlist-side"><div className="section-row"><p className="eyebrow">Playlists</p><button className="icon-btn"><Plus size={16} /></button></div><button className="playlist-link"><span className="playlist-cover coral" />My playlist <span>{playlist.length || 18}</span></button><button className="playlist-link"><span className="playlist-cover violet" />Sunday reset <span>24</span></button><button className="playlist-link"><span className="playlist-cover gold" />Late night drive <span>9</span></button></div>
+      <div className="room-card"><div className="live-dot" /><div><strong>Friends Music Room</strong><p>3 friends listening</p></div><button onClick={() => setRoomOpen(true)}><ChevronRight size={16} /></button></div>
+      <div className="profile"><div className="avatar">AM</div><div><strong>Alex Morgan</strong><p>Free account</p></div><MoreHorizontal size={17} /></div>
+    </aside>
+    <section className="content">
+      <header className="topbar"><div className="mobile-brand brand"><span className="brand-mark"><Headphones size={18} /></span>sonora</div><div className="search-wrap"><Search size={18} /><input aria-label="Search the full catalog" placeholder="Search songs, artists, albums, genres..." value={query} onChange={e => setQuery(e.target.value)} /><span className="search-hint">⌘ K</span></div><button className="top-icon"><Radio size={18} /></button><button className="top-avatar">AM</button></header>
+      <div className="content-inner">
+        <div className="welcome"><div><p className="eyebrow">{query ? 'Full catalog search' : 'Tuesday, September 15'}</p><h1>{query ? `Results for “${query}”` : 'Good evening, Alex'}</h1><p className="subhead">{query ? `${results.length} tracks, artists, albums and genres found` : 'A little music for wherever the day takes you.'}</p></div><button className="room-button" onClick={() => setRoomOpen(true)}><Users size={17} /> Open music room</button></div>
+        {!query && <section><div className="section-heading"><div><p className="eyebrow">Tune into a feeling</p><h2>What&apos;s your mood?</h2></div><button className="text-button">View all <ChevronRight size={15} /></button></div><div className="mood-row"><button className={`mood-pill ${activeMood === 'All moods' ? 'selected' : ''}`} onClick={() => setActiveMood('All moods')}>All moods</button>{moods.map(mood => <button key={mood} className={`mood-pill ${activeMood === mood ? 'selected' : ''}`} onClick={() => setActiveMood(mood)}>{mood}</button>)}</div></section>}
+        <section><div className="section-heading"><div><p className="eyebrow">{query ? 'Complete catalog' : 'Picked for you'}</p><h2>{query ? 'Catalog results' : 'Discover something new'}</h2></div>{!query && <span className="catalog-note">Showing 12 of 24+ tracks <ChevronRight size={14} /></span>}</div><div className="track-grid">{(query ? results : discovery).map((track, index) => <article className="track-card" key={track.id}><button className="art-button" onClick={() => togglePlay(track)}><Artwork track={track} /><span className="play-overlay">{current?.id === track.id && playing ? <Pause size={19} fill="currentColor" /> : <Play size={19} fill="currentColor" />}</span></button><div className="track-meta"><strong>{track.title}</strong><button className="artist-link">{track.artist}</button><span>{track.album} · {track.duration}</span></div><button className={`heart-btn ${liked.includes(track.id) ? 'liked' : ''}`} onClick={() => setLiked(items => items.includes(track.id) ? items.filter(id => id !== track.id) : [...items, track.id])}><Heart size={17} fill={liked.includes(track.id) ? 'currentColor' : 'none'} /></button><button className="add-btn" onClick={() => addPlaylist(track)} title="Add to playlist">{playlist.includes(track.id) ? <Check size={16} /> : <Plus size={16} />}</button></article>)}</div>{!query && <button className="load-more" onClick={() => setQuery(' ')}>Browse full catalog <ChevronRight size={16} /></button>}</section>
+        <section className="lower-grid"><div className="wide-card"><div><p className="eyebrow">Keep the vibe going</p><h3>Artists you might like</h3><p>Explore new sounds from the catalog.</p></div><div className="artist-stack">{['Luna Vale','Mira Sol','Kairo Bloom'].map((name, i) => <button key={name} onClick={() => setQuery(name)}><img src={artworks[i]} alt="" /><span>{name}</span><ChevronRight size={15} /></button>)}</div></div><div className="stats-card"><div className="stat-icon"><Headphones size={18} /></div><strong>2h 18m</strong><p>listening this week</p><div className="bars">{[32,55,42,70,48,88,62].map((height, i) => <i key={i} style={{ height: `${height}%` }} />)}</div></div></section>
+      </div>
+    </section>
+    {current && <footer className="player"><div className="now-playing"><Artwork track={current} size="sm" /><div><strong>{current.title}</strong><p>{current.artist}</p></div><button onClick={() => setLiked(items => items.includes(current.id) ? items.filter(id => id !== current.id) : [...items, current.id])}><Heart size={16} fill={liked.includes(current.id) ? 'currentColor' : 'none'} /></button></div><div className="player-controls"><div className="control-row"><button><Shuffle size={16} /></button><button className="previous">◀</button><button className="main-play" onClick={() => setPlaying(!playing)}>{playing ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}</button><button>▶</button><button><MoreHorizontal size={17} /></button></div><div className="progress"><span /> <small>1:24</small><div className="progress-line"><i /></div><small>{current.duration}</small></div></div><div className="player-actions"><button><ListMusic size={17} /></button><button><Volume2 size={17} /></button><div className="volume"><i /></div></div></footer>}
+    {roomOpen && <div className="modal-backdrop" onClick={() => setRoomOpen(false)}><div className="room-modal" onClick={e => e.stopPropagation()}><div className="section-row"><div><p className="eyebrow">LIVE TOGETHER</p><h2>Friends Music Room</h2></div><button className="icon-btn" onClick={() => setRoomOpen(false)}>×</button></div><div className="room-status"><span className="live-dot" /> Maya, Jordan and you are listening together</div><div className="room-search"><Search size={16} /><input placeholder="Add a song to the shared queue" onChange={e => setQuery(e.target.value)} /></div><div className="queue"><p className="eyebrow">Up next · 3 songs</p>{catalog.slice(0, 3).map((track, i) => <div className="queue-row" key={track.id}><span>{i + 1}</span><Artwork track={track} size="sm" /><div><strong>{track.title}</strong><p>{track.artist}</p></div><small>Added by {i === 0 ? 'Maya' : 'Jordan'}</small><button onClick={() => togglePlay(track)}><Play size={15} fill="currentColor" /></button></div>)}</div><button className="invite-button">Invite friends to this room</button></div></div>}
+  </main>
+}
+
+const artworks = ['https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=160&q=80','https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=160&q=80','https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?w=160&q=80']

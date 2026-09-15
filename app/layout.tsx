@@ -3,8 +3,8 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
+  title: 'Sonora — Music for every moment',
+  description: 'Discover, search, and share music across your complete catalog.',
   generator: 'v0.app',
   icons: {
     icon: [
